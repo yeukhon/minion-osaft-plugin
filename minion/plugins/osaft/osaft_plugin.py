@@ -2,6 +2,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import json
+import os
+
 from minion.plugins.base import ExternalProcessPlugin
 
 class OSAFTPlugin(ExternalProcessPlugin):
@@ -13,8 +16,28 @@ class OSAFTPlugin(ExternalProcessPlugin):
     OSAFT_MIN_VERSION = "13.12.17b"
     OSFT_MAX_VERSION = "13.12.17b"
 
+    def load_config(self):
+        for config_f in ["/etc/minion/osaft-plugin.json", \
+                os.path.expanduser("~/.minion/osaft-plugin.json")]:
+            if os.path.exists(config_f):
+                with open (config_f, "r") as f:
+                    return json.load(f)
+        raise Exception("osaft-plugin.json does not exist.")
+
+    # override the default locate_program
+    def locate_program(self):
+        osaft_config = self.load_config()
+        osaft_path = osaft_config.get("osaft-path")
+        if not osaft_path:
+            raise Exception("osaft-plugin.json must specify osaft-path.")
+
+        osaft_path = os.path.join(osaft_path, self.OSAFT_NAME)
+        if not os.path.exists(osaft_path):
+            raise Exception("{path} does not exists.".format(path=osaft_path))
+        self.osaft_path = osaft_path
+
     def do_start(self):
-        osaft_path = "/home/vagrant/o-saft/o-saft.pl"
+        self.locate_program()
         self.stdout = ""
         self.stderr = ""
 
@@ -37,7 +60,7 @@ class OSAFTPlugin(ExternalProcessPlugin):
             command = "+check"
 
         target = configs["target"]
-        self.spawn(osaft_path, [command, target])
+        self.spawn(self.osaft_path, [command, target])
 
     def do_process_stdout(self, data):
         self.stdout += data
