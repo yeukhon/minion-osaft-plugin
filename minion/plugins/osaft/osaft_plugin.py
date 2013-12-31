@@ -15,6 +15,7 @@ class OSAFTPlugin(ExternalProcessPlugin):
 
     def do_start(self):
         osaft_path = "/home/vagrant/o-saft/o-saft.pl"
+        osaft_executable = "perl" + " " + osaft_path
         self.stdout = ""
         self.stderr = ""
 
@@ -37,7 +38,7 @@ class OSAFTPlugin(ExternalProcessPlugin):
             command = "+check"
 
         target = configs["target"]
-        self.spawn(osaft_path, [command, target])
+        self.spawn("perl", [osaft_path, command, target])
 
     def do_process_stdout(self, data):
         self.stdout += data
@@ -54,12 +55,13 @@ class OSAFTPlugin(ExternalProcessPlugin):
                 description = self.stdout
             else:
                 summary = "Unsuccessful OSAFT scan"
-                description = self.stderr
-            return self.report_issues([
+                description = self.stdout
+            self.report_issues([
                 {"Summary": summary,
                  "Description": description,
-                 "Severity": "Info",
-                 "URLs": [ {"URL": None, "Extra": None} ],
-                 "FurtherInfo": [ {"URL": None, "Title": None} ]
+                "Severity": "Info",
+                "URLs": [ {"URL": None, "Extra": None} ],
+                "FurtherInfo": [ {"URL": None, "Title": None} ]
                 }
             ])
+            self.report_finish()
