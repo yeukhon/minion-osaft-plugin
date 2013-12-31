@@ -19,9 +19,9 @@ class OSAFTPlugin(ExternalProcessPlugin):
         self.stderr = ""
 
         # validate and construct arguments
-        configs = self.configurations
-        info, quick, check = configs.get('info'),
-                             configs.get('quick'),
+        configs = self.configuration
+        info, quick, check = configs.get('info'), \
+                             configs.get('quick'), \
                              configs.get('check')
         _cmd_count = sum(map(bool, (info, quick, check)))
         if _cmd_count > 1:
@@ -37,10 +37,7 @@ class OSAFTPlugin(ExternalProcessPlugin):
             command = "+check"
 
         target = configs["target"]
-        # we don't support options right now
-        args = " ".join(command, (command, target))
-
-        self.spawn(osaft_path, args)
+        self.spawn(osaft_path, [command, target])
 
     def do_process_stdout(self, data):
         self.stdout += data
