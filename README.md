@@ -9,21 +9,21 @@ First, setup Minion (https://github.com/mozilla/minion).
 
 Second, grab the O-Saft source code from https://github.com/OWASP/O-Saft.
 
-``
+```
 git clone https://github.com/OWASP/O-Saft.git
 mv O-Saft o-saft
 chmod +x o-saft/o-saft.pl
 rm o-saft/o-saft-README
-``
+```
 
 Finally, clone this repository.
 
-``
+```
 git clone https://github.com/yeukhon/minion-osaft-plugin
 cd minion-osaft-plugin
 source <MINION_BACKEND_VRITUAL_ENV>/bin/activate
 [sudo] python setup.py [develop|install]
-``
+```
 
 Note you need to replace ``MINION_BACKEND_VIRTUAL_ENV`` with
 the name of the virtualenv you created for Minion. If you install
