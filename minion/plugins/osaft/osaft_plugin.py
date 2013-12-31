@@ -37,7 +37,7 @@ class OSAFTPlugin(ExternalProcessPlugin):
             command = "+check"
 
         target = configs["target"]
-        self.spawn("perl", [osaft_path, command, target])
+        self.spawn(osaft_path, [command, target])
 
     def do_process_stdout(self, data):
         self.stdout += data
