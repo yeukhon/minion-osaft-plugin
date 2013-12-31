@@ -16,7 +16,7 @@ class OSAFTPlugin(ExternalProcessPlugin):
 
     OSAFT_NAME = "o-saft.pl"
     OSAFT_MIN_VERSION = "13.12.17b"
-    OSAFT_MAX_VERSION = "13.12.17b"
+    OSAFT_MAX_VERSION = "13.12.26"
 
     def load_config(self):
         for config_f in ["/etc/minion/osaft-plugin.json", \
