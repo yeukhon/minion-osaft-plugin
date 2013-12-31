@@ -15,7 +15,6 @@ class OSAFTPlugin(ExternalProcessPlugin):
 
     def do_start(self):
         osaft_path = "/home/vagrant/o-saft/o-saft.pl"
-        osaft_executable = "perl" + " " + osaft_path
         self.stdout = ""
         self.stderr = ""
 
