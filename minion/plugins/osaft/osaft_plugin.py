@@ -4,6 +4,8 @@
 
 import json
 import os
+import re
+import subprocess
 
 from minion.plugins.base import ExternalProcessPlugin
 
@@ -14,7 +16,7 @@ class OSAFTPlugin(ExternalProcessPlugin):
 
     OSAFT_NAME = "o-saft.pl"
     OSAFT_MIN_VERSION = "13.12.17b"
-    OSFT_MAX_VERSION = "13.12.17b"
+    OSAFT_MAX_VERSION = "13.12.17b"
 
     def load_config(self):
         for config_f in ["/etc/minion/osaft-plugin.json", \
@@ -36,8 +38,27 @@ class OSAFTPlugin(ExternalProcessPlugin):
             raise Exception("{path} does not exists.".format(path=osaft_path))
         self.osaft_path = osaft_path
 
+    def check_version(self, program_path):
+        p = subprocess.Popen([program_path, "--version"], \
+            stdout=subprocess.PIPE, \
+            stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+        if stderr:
+            return Exception("Unable to launch O-SAFT to check version. " + stderr)
+
+        r = re.compile("o-saft.pl\s(?P<version>\d+\.\d+\.\d+\w)")
+        m = r.search(stdout)
+        if m:
+            version = m.group('version')
+            if version < self.OSAFT_MIN_VERSION or version > self.OSAFT_MAX_VERSION:
+                raise Exception("This version {cv} is not supported. We only support {v1} to {v2}".format(
+                                cv=version, v1=self.OSAFT_MIN_VERSION, v2=self.OSAFT_MAX_VERSION))
+        else:
+            raise Exception("Unable to detect O-SAFT version.")
+
     def do_start(self):
         self.locate_program()
+        self.check_version(self.osaft_path)
         self.stdout = ""
         self.stderr = ""
 
