@@ -8,6 +8,7 @@ import re
 import subprocess
 
 from minion.plugins.base import ExternalProcessPlugin
+from report import split_sections
 
 class OSAFTPlugin(ExternalProcessPlugin):
 
@@ -74,14 +75,14 @@ class OSAFTPlugin(ExternalProcessPlugin):
             raise Exception("One O-SAFT command (info, quick, check) must be specified per scan.")
 
         if info:
-            command = "+info"
+            self.osaft_command = "+info"
         elif quick:
-            command = "+quick"
+            self.osaft_command = "+quick"
         else:
-            command = "+check"
+            self.osaft_command = "+check"
 
         target = configs["target"]
-        self.spawn(self.osaft_path, [command, target])
+        self.spawn(self.osaft_path, [self.osaft_command, target])
 
     def do_process_stdout(self, data):
         self.stdout += data
@@ -95,7 +96,7 @@ class OSAFTPlugin(ExternalProcessPlugin):
         elif process_status == 0:
             if not self.stderr:
                 summary = "Successful OSAFT scan"
-                description = self.stdout
+                description = split_sections(self.osaft_command, self.stdout)
             else:
                 summary = "Unsuccessful OSAFT scan"
                 description = self.stdout
