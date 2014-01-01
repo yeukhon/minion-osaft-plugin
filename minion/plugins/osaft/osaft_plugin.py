@@ -82,7 +82,7 @@ class OSAFTPlugin(ExternalProcessPlugin):
             self.osaft_command = "+check"
 
         target = configs["target"]
-        self.spawn(self.osaft_path, ["+info", target])
+        self.spawn(self.osaft_path, [self.osaft_command, target])
 
     def do_process_stdout(self, data):
         self.stdout += data
@@ -94,29 +94,18 @@ class OSAFTPlugin(ExternalProcessPlugin):
         if self.stopping and process_status == 9:
             self.report_finish("STOPPED")
         elif process_status == 0:
-            if self.stderr:
-                with open("/home/vagrant/quick") as f:
-                    self.stdout = f.read()
-                sections_dict = split_sections("+quick", self.stdout)
-                #if self.osaft_command == "+info":
-                #    issues = get_info_issues(sections_dict)
-                #    self.report_issues(issues)
-                #elif self.osaft_command == "+check":
-                #if True:
-                #    self.report_issues([
-                #        {"Summary": "Successful +check scan",
-                #         "Description": sections_dict,
-                #        "Severity": "Info",
-                #        "URLs": [ {"URL": None, "Extra": None} ],
-                #        "FurtherInfo": [ {"URL": None, "Title": None} ]
-                #        }
-                #    ])
-                if True:
-                    issues = get_quick_issues(sections_dict)
-                    self.report_issues(issues)
+            sections_dict = split_sections(self.osaft_command, self.stdout)
+            if self.stdout:
+                if self.osaft_command == "+info":
+                    issues = get_info_issues(sections_dict)
+                elif self.osaft_command == "+check":
+                    issues = get_check_issues(sections_dict)
+                elif self.osaft_command == "+quick":
+                    issues = get_quick_issues(sections_dict)    
+                self.report_issues(issues)
             else:
                 summary = "Unsuccessful OSAFT scan"
-                description = self.stdout
+                description = self.stderr
                 self.report_issues([
                     {"Summary": summary,
                      "Description": description,

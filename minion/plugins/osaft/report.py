@@ -534,22 +534,22 @@ def get_info_issues(info_report):
 
     if int(pk_strength) < 2048:
         issues.append(
-            format_report('low_pk_strength', "Description", {"size": pk_strength})
-        )
+            format_report('low_pk_strength', 
+                [{"Description": {"size": pk_strength}}]))
     else:
         issues.append(
-            format_report('high_pk_strength', "Description", {"size": pk_strength})
-        )
+            format_report('high_pk_strength', 
+                [{"Description": {"size": pk_strength}}]))
 
     expire_datetime = datetime.strptime(valid_until, "%b %d %H:%M:%S %Y %Z")
     if datetime.today() >= expire_datetime:
         issues.append(
-            format_report('expired', "Description", {"timestamp": valid_until})
-        )
+            format_report('expired', 
+                [{"Description": {"timestamp": valid_until}}]))
     else:
         issues.append(
-            format_report('valid', "Description", {"timestamp": valid_until})
-        )
+            format_report('valid', 
+                [{"Description": {"timestamp": valid_until}}]))
 
     if has_sec_renego != "Secure Renegotiation IS supported":
         issues.append(_issues["no_sec_renego"])
