@@ -363,7 +363,7 @@ def get_check_issues(check_report):
     sslv3_default = cert_summary["Default cipher for SSLv3"]
     tlsv1_default = cert_summary["Default cipher for TLSv1"]
     pk_strength = cert_summary["Certificate public key size"]
-    is_expired = cert_summary["Certificate is not expired"]
+    is_not_expired = cert_summary["Certificate is not expired"]
     no_rc4_support = cert_summary["Target does not accepts RC4 ciphers"]
     is_self_signed = cert_summary["Certificate is not self-signed"]
 
@@ -409,12 +409,9 @@ def get_check_issues(check_report):
             format_report('high_pk_strength', "Description", {"size": key_size})
         )
 
-    return issues
-
-    """
-    _, valid_until = is_expired.split(" ", 1)
-    valid_until = is_expired.split("(")[1].split(")")[0]
-    if "no" not in is_expired:
+    _, valid_until = is_not_expired.split(" ", 1)
+    valid_until = is_not_expired.split("(")[1].split(")")[0]
+    if "no" in is_not_expired:
         issues.append(
             format_report('expired', "Description", {"timestamp": valid_until})
         )
@@ -423,6 +420,9 @@ def get_check_issues(check_report):
             format_report('valid', "Description", {"timestamp": valid_until})
         )
 
+    return issues
+
+    """
     if "yes" in no_rc4_support:
         issues.append(
             format_report('has_rc4_support', "Description", {"ciphers": rc4_ciphers})
