@@ -92,18 +92,36 @@ def split_info_sections(all_lines):
     info_sections = [
         "=== Informations ==="
     ]
-    sections_title = [
+    titles = [
         "Certificate Information"
     ]
 
-    sections = []
+    return section_processor(all_lines, info_sections, titles)
 
-    sections_count = len(info_sections)
+def section_processor(all_lines, sections_headers, titles):
+    """
+    Break down sections and rows into a dictionary of the form
+    ``{report_section_title: {row_key: row_value}``.
+
+    Parameters
+    ----------
+    all_lines : list
+    sections_headers : list
+    titles : list
+
+    Returns
+    -------
+    sections_dict : dict
+
+    """
+
+    sections = []
+    sections_count = len(sections_headers)
     next_h_index = 0
     # to split by section, we find the index of the section header in
     # and the location of the next header (if not already last) from
     # all the lines.
-    for index, section_header in enumerate(info_sections):
+    for index, section_header in enumerate(sections_headers):
         header_index = all_lines.index(section_header)
         # skip the entire header we don't need it in the report
         starting_index = header_index + 1
@@ -113,7 +131,7 @@ def split_info_sections(all_lines):
         else:
             # we are not at the last section so we better find the index
             # of the next section
-            next_h_index = all_lines.index(info_sections[index+1])
+            next_h_index = all_lines.index(sections_headers[index+1])
             # go one line up before the next header appears
             ending_index = next_h_index - 1
         # once we split, we need to remove empty lines
@@ -121,7 +139,7 @@ def split_info_sections(all_lines):
 
     # sections now contains all the lines for each individual section
     # zip each section with the title we will use in the report
-    sections_dict = dict(zip(sections_title, sections))
+    sections_dict = dict(zip(titles, sections))
 
     # we need to further process the dictionary by breaking into
     # key/value.
