@@ -85,7 +85,7 @@ def split_sections(command, stdout):
     all_lines = stdout.split("\n")
     spliter = {
         "+info": split_info_sections,
-        #"+quick": split_quick_sections,
+        "+quick": split_quick_sections,
         "+check": split_check_sections
     }
     return spliter[command](all_lines)
@@ -144,6 +144,27 @@ def split_check_sections(all_lines):
         "Certificate Check Scores",
     ]
     return section_processor(all_lines, check_sections, titles)
+
+def split_quick_sections(all_lines):
+    quick_sections = [
+        "=== Ciphers: Checking SSLv3 ===",
+        "== Ciphers: Summary SSLv3 ==",
+        "=== Ciphers: Checking TLSv1 ===",
+        "== Ciphers: Summary TLSv1 ==",
+        "== Ciphers: Summary  ==",
+        "=== Informations ===",
+        "=== Performed Checks ==="
+    ]
+    titles = [
+        "SSLv3 Ciphers Checklist",
+        "SSLv3 Ciphers Summary",
+        "TLSv1 Ciphers Checklist",
+        "TLSv1 Ciphers Summary",
+        "Ciphers Checks Summary",
+        "Certificate Information",
+        "Certificate Check Summary"
+    ]
+    return section_processor(all_lines, quick_sections, titles)
 
 def section_processor(all_lines, sections_headers, titles):
     """
@@ -397,7 +418,7 @@ to the target server with high confident the connection is legitmate and trusted
 public key, and sends it over the network. When the key is compromised, all previous traffic and future traffic can be decrypted. \
 Instead of requiring two parties (e.g. browser and the server) to agree on the session key by exchanging each other's key, \
 PFS performs Diffie-Hellman keychange so that only the two parties have access to the session key.",
-            "Severity": "medium",
+            "Severity": "Medium",
             "URLs": [ {"URL": None, "Extra": None} ],
             "FurtherInfo": FURTHER_INFO_ON_PFS
         },
@@ -410,7 +431,7 @@ session key, encrypts it using the server public key, and sends it over the netw
 previous traffic and future traffic can be decrypted. Instead of requiring two parties (e.g. browser and the server) \
 to agree on the session key by exchanging each other's key, PFS performs Diffie-Hellman keychange so that only the two\
  parties have access to the session key.",
-            "Severity": "medium",
+            "Severity": "Info",
             "URLs": [ {"URL": None, "Extra": None} ],
             "FurtherInfo": FURTHER_INFO_ON_PFS
         },
@@ -529,6 +550,40 @@ def get_info_issues(info_report):
         issues.append(
             format_report('valid', "Description", {"timestamp": valid_until})
         )
+
+    if has_sec_renego != "Secure Renegotiation IS supported":
+        issues.append(_issues["no_sec_renego"])
+    else:
+        issues.append(_issues["has_sec_renego"])
+
+    return issues
+
+def get_quick_issues(quick_report):
+    issues = []
+    cert_info = quick_report["Certificate Information"]
+    cert_summary = quick_report["Certificate Check Summary"]
+    sslv3_default = cert_summary["Default CipherSSLv3"]
+    tlsv1_default = cert_summary["Default CipherTLSv1"]
+    not_expired = cert_summary["Validity (date)"]
+    support_pfs = cert_summary["PFS supported"]
+    has_sec_renego = cert_info["Renegotiation"]
+
+    for suite in (("SSLv3", sslv3_default), ("TLSv1", tlsv1_default)):
+        issues.append(default_cipher_check(suite[0], suite[1]))
+
+    valid_until = not_expired.split("( ..")[1].split(")")[0].strip()
+    if "no" in not_expired:
+        issues.append(
+            format_report('expired', 
+                [{"Description": {"timestamp": valid_until}}]))
+    else:
+        issues.append(
+            format_report('valid', 
+                [{"Description": {"timestamp": valid_until}}]))
+    if "no" in support_pfs:
+        issues.append(_issues["no_pfs"])
+    else:
+        issues.append(_issues["support_pfs"])
 
     if has_sec_renego != "Secure Renegotiation IS supported":
         issues.append(_issues["no_sec_renego"])

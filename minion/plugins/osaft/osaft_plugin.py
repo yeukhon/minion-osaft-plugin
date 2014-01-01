@@ -8,7 +8,7 @@ import re
 import subprocess
 
 from minion.plugins.base import ExternalProcessPlugin
-from report import split_sections, get_info_issues, get_check_issues
+from report import split_sections, get_info_issues, get_check_issues, get_quick_issues
 
 class OSAFTPlugin(ExternalProcessPlugin):
 
@@ -95,9 +95,9 @@ class OSAFTPlugin(ExternalProcessPlugin):
             self.report_finish("STOPPED")
         elif process_status == 0:
             if self.stderr:
-                with open("/home/vagrant/check") as f:
+                with open("/home/vagrant/quick") as f:
                     self.stdout = f.read()
-                sections_dict = split_sections("+check", self.stdout)
+                sections_dict = split_sections("+quick", self.stdout)
                 #if self.osaft_command == "+info":
                 #    issues = get_info_issues(sections_dict)
                 #    self.report_issues(issues)
@@ -112,7 +112,7 @@ class OSAFTPlugin(ExternalProcessPlugin):
                 #        }
                 #    ])
                 if True:
-                    issues = get_check_issues(sections_dict)
+                    issues = get_quick_issues(sections_dict)
                     self.report_issues(issues)
             else:
                 summary = "Unsuccessful OSAFT scan"
