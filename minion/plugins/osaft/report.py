@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import copy
 import re
 from datetime import datetime
 
@@ -375,13 +376,8 @@ to the target server with high confident the connection is legitmate and trusted
 
 }
 
-def format_report(issue_key, component, formats):
-    issue = _issues[issue_key]
-    issue[component] = issue[component].format(**formats)
-    return issue
-
-def format_report2(issue_key, format_list):
-    issue = _issues[issue_key]
+def format_report(issue_key, format_list):
+    issue = copy.deepcopy(_issues[issue_key])
     for component in format_list:
         for component_name, kwargs in component.items():
             issue[component_name] = issue[component_name].format(**kwargs)
@@ -394,11 +390,11 @@ def default_cipher_check(version, result):
 
     cipher, level = _get_cipher_level(result)
     if "HIGH" not in result:
-        return format_report2('low_cipher_default', 
+        return format_report('low_cipher_default', 
                 [{"Summary": {"version": version}},
                  {"Description": {"version": version, "cipher": cipher, "level": level}}])
     else:
-        return format_report2('high_cipher_default',
+        return format_report('high_cipher_default',
                 [{"Summary": {"version": version}},
                  {"Description": {"version": version, "cipher": cipher, "level": level}}])
 
@@ -421,23 +417,23 @@ def get_check_issues(check_report):
     key_size = pk_strength.split(" bits")[0]
     if int(key_size) < 2048:
         issues.append(
-            format_report('low_pk_strength', "Description", {"size": key_size})
-        )
+            format_report('low_pk_strength', 
+                [{"Description": {"size": key_size}}]))
     else:
         issues.append(
-            format_report('high_pk_strength', "Description", {"size": key_size})
-        )
+            format_report('high_pk_strength', 
+                [{"Description": {"size": key_size}}]))
 
     _, valid_until = is_not_expired.split(" ", 1)
     valid_until = is_not_expired.split("(")[1].split(")")[0]
     if "no" in is_not_expired:
         issues.append(
-            format_report('expired', "Description", {"timestamp": valid_until})
-        )
+            format_report('expired', 
+                [{"Description": {"timestamp": valid_until}}]))
     else:
         issues.append(
-            format_report('valid', "Description", {"timestamp": valid_until})
-        )
+            format_report('valid', 
+                [{"Description": {"timestamp": valid_until}}]))
 
     if "no" in is_not_self_signed:
         issues.append(_issues["is_self_signed"])
