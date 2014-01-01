@@ -8,7 +8,7 @@ import re
 import subprocess
 
 from minion.plugins.base import ExternalProcessPlugin
-from report import split_sections, check_info_issues
+from report import split_sections, get_info_issues
 
 class OSAFTPlugin(ExternalProcessPlugin):
 
@@ -82,7 +82,7 @@ class OSAFTPlugin(ExternalProcessPlugin):
             self.osaft_command = "+check"
 
         target = configs["target"]
-        self.spawn(self.osaft_path, [self.osaft_command, target])
+        self.spawn(self.osaft_path, ["+info", target])
 
     def do_process_stdout(self, data):
         self.stdout += data
@@ -94,11 +94,23 @@ class OSAFTPlugin(ExternalProcessPlugin):
         if self.stopping and process_status == 9:
             self.report_finish("STOPPED")
         elif process_status == 0:
-            if not self.stderr:
-                #summary = "Successful OSAFT scan"
-                sections_dict = split_sections(self.osaft_command, self.stdout)
-                issues = check_info_issues(sections_dict)
-                self.report_issues(issues)
+            if self.stderr:
+                with open("/home/vagrant/check") as f:
+                    self.stdout = f.read()
+                sections_dict = split_sections("+check", self.stdout)
+                #if self.osaft_command == "+info":
+                #    issues = get_info_issues(sections_dict)
+                #    self.report_issues(issues)
+                #elif self.osaft_command == "+check":
+                if True:
+                    self.report_issues([
+                        {"Summary": "Successful +check scan",
+                         "Description": sections_dict,
+                        "Severity": "Info",
+                        "URLs": [ {"URL": None, "Extra": None} ],
+                        "FurtherInfo": [ {"URL": None, "Title": None} ]
+                        }
+                    ])
             else:
                 summary = "Unsuccessful OSAFT scan"
                 description = self.stdout

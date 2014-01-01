@@ -5,7 +5,7 @@
 import re
 from datetime import datetime
 
-def convert_rows_to_dict(lines):
+def convert_rows_to_dict(section, lines):
     """
     Convert each row in a section into
     key-value pair by splitting on ``:``
@@ -14,6 +14,9 @@ def convert_rows_to_dict(lines):
 
     Parameters
     ----------
+    section : str
+        The key used in the report corresponding to
+        this section of lines.
     lines : list
         A list of lines orginated from spliting on ":" 
         on a section.
@@ -24,18 +27,30 @@ def convert_rows_to_dict(lines):
     
     """
 
-    new_list = []
-    for line in lines:
-        temp = line.split(":", 1)
-        if len(temp) == 2:
-            new_list.append([temp[0], temp[1].strip()])
-    return {item[0]: item[1] for item in new_list}
+    if "Checklist" in section:
+        return convert_cipher_checks_to_dict(lines)
+    else:
+        new_list = []
+        for line in lines:
+            temp = line.split(":", 1)
+            if len(temp) == 2:
+                new_list.append([temp[0], temp[1].strip()])
+        return {item[0]: item[1] for item in new_list}
 
-def split_cipher_check(cipher_list, name):
-    if len(cipher_list) < 3:
-        raise Exception("%s cipher check list does not have enough rows to parse." % name)
+def convert_cipher_checks_to_dict(cipher_list):
     ciphers = cipher_list[3:]
-    title = "%s Cipher Checks" % name
+    cipher_dict = {"high": {}, "medium": {}, "weak": {}, "low": {}, "unknown": {}}
+    for cipher in ciphers:
+        empty, cipher_name, present, strength = re.split("\s*", cipher)
+        if "-?-" == strength:
+            strength = "unknown"
+        else:
+            strength = strength.lower()
+        cipher_dict[strength][cipher_name] = present
+    return cipher_dict
+
+def split_cipher_check(cipher_list, title):
+    ciphers = cipher_list[3:]
     cipher_dict = {title : {"high": {}, "medium": {}, "weak": {}, "low": {}}}
     for cipher in ciphers:
         empty, cipher_name, present, strength = re.split("\s*", cipher)
@@ -70,7 +85,7 @@ def split_sections(command, stdout):
     spliter = {
         "+info": split_info_sections,
         #"+quick": split_quick_sections,
-        #"+check": split_check_sections
+        "+check": split_check_sections
     }
     return spliter[command](all_lines)
 
@@ -99,6 +114,36 @@ def split_info_sections(all_lines):
 
     return section_processor(all_lines, info_sections, titles)
 
+def split_check_sections(all_lines):
+    """
+    Return a dict of sections from the check report.
+
+    See Also
+    --------
+    split_info_sections function.
+
+    """
+
+    check_sections = [
+        "=== Ciphers: Checking SSLv3 ===",
+        "== Ciphers: Summary SSLv3 ==",
+        "=== Ciphers: Checking TLSv1 ===",
+        "== Ciphers: Summary TLSv1 ==",
+        "== Ciphers: Summary  ==",
+        "=== Performed Checks ===",
+        "=== Scoring Results ==="
+    ]
+    titles = [
+        "SSLv3 Ciphers Checklist",
+        "SSLv3 Ciphers Summary",
+        "TLSv1 Ciphers Checklist",
+        "TLSv1 Ciphers Summary",
+        "Ciphers Checks Summary",
+        "Certificate Check Summary",
+        "Certificate Check Scores",
+    ]
+    return section_processor(all_lines, check_sections, titles)
+
 def section_processor(all_lines, sections_headers, titles):
     """
     Break down sections and rows into a dictionary of the form
@@ -119,6 +164,7 @@ def section_processor(all_lines, sections_headers, titles):
     sections = []
     sections_count = len(sections_headers)
     next_h_index = 0
+
     # to split by section, we find the index of the section header in
     # and the location of the next header (if not already last) from
     # all the lines.
@@ -145,7 +191,7 @@ def section_processor(all_lines, sections_headers, titles):
     # we need to further process the dictionary by breaking into
     # key/value.
     for section, rows in sections_dict.items():
-        sections_dict[section] = convert_rows_to_dict(rows)
+        sections_dict[section] = convert_rows_to_dict(section, rows)
 
     return sections_dict
 
@@ -279,7 +325,7 @@ def format_report(issue_key, component, formats):
     issue[component] = issue[component].format(**formats)
     return issue
 
-def check_info_issues(info_report):
+def get_info_issues(info_report):
     """
     Return a list of issues that the +info have discovered.
 
