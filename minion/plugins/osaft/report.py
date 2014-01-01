@@ -399,17 +399,19 @@ def get_check_issues(check_report):
                  {"Description": {"name": "TLSv1", "cipher": cipher, "level": level}}])
         )
 
-    return issues
-    """
-    if int(pk_strength) < 2048:
+    key_size = pk_strength.split(" bits")[0]
+    if int(key_size) < 2048:
         issues.append(
-            format_report('low_pk_strength', "Description", {"size": pk_strength})
+            format_report('low_pk_strength', "Description", {"size": key_size})
         )
     else:
         issues.append(
-            format_report('high_pk_strength', "Description", {"size": pk_strength})
+            format_report('high_pk_strength', "Description", {"size": key_size})
         )
 
+    return issues
+
+    """
     _, valid_until = is_expired.split(" ", 1)
     valid_until = is_expired.split("(")[1].split(")")[0]
     if "no" not in is_expired:
