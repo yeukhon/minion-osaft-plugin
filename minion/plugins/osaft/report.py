@@ -269,6 +269,22 @@ FURTHER_INFO_ON_SELF_SIGNED_CERT = [
 ]
 FURTHER_INFO_ON_SELF_SIGNED_CERT += BASIC_FURTHER_INFO
 
+FURTHER_INFO_ON_PFS = [
+    {
+        "URL": "https://community.qualys.com/blogs/securitylabs/2013/06/25/ssl-labs-deploying-forward-secrecy",
+        "Title": "Qualys SSL Lab - Deploying Forward Secrecy"
+    },
+    {
+        "URL": "https://blog.twitter.com/2013/forward-secrecy-at-twitter-0",
+        "Title": "Twitter Blog - Forward Secrecy at Twitter",
+    },
+    {
+        "URL": "https://blog.mozilla.org/security/2013/11/12/navigating-tls/",
+        "Title": "Mozilla Security Blog - Navigating the TLS landscape"
+    },
+]
+FURTHER_INFO_ON_PFS += BASIC_FURTHER_INFO
+
 _issues = {
     "low_pk_strength":
         {
@@ -373,7 +389,31 @@ to the target server with high confident the connection is legitmate and trusted
             "URLs": [ {"URL": None, "Extra": None} ],
             "FurtherInfo": FURTHER_INFO_ON_SELF_SIGNED_CERT
         },
-
+    "no_pfs":
+        {
+            "Code": "osaft-10",
+            "Summary": "Server does not support perfect forward secrecy",
+            "Description": "Under traditional https, the client chooses a random session key, encrypts it using the server \
+public key, and sends it over the network. When the key is compromised, all previous traffic and future traffic can be decrypted. \
+Instead of requiring two parties (e.g. browser and the server) to agree on the session key by exchanging each other's key, \
+PFS performs Diffie-Hellman keychange so that only the two parties have access to the session key.",
+            "Severity": "medium",
+            "URLs": [ {"URL": None, "Extra": None} ],
+            "FurtherInfo": FURTHER_INFO_ON_PFS
+        },
+    "support_pfs":
+        {
+            "Code": "osaft-11",
+            "Summary": "Server supports perfect forward secrecy",
+            "Description": "This server supports forward secrecy. Under traditional https, the client chooses a random \
+session key, encrypts it using the server public key, and sends it over the network. When the key is compromised, all \
+previous traffic and future traffic can be decrypted. Instead of requiring two parties (e.g. browser and the server) \
+to agree on the session key by exchanging each other's key, PFS performs Diffie-Hellman keychange so that only the two\
+ parties have access to the session key.",
+            "Severity": "medium",
+            "URLs": [ {"URL": None, "Extra": None} ],
+            "FurtherInfo": FURTHER_INFO_ON_PFS
+        },
 }
 
 def format_report(issue_key, format_list):
@@ -410,6 +450,7 @@ def get_check_issues(check_report):
     pk_strength = cert_summary["Certificate public key size"]
     is_not_expired = cert_summary["Certificate is not expired"]
     is_not_self_signed = cert_summary["Certificate is not self-signed"]
+    support_pfs = cert_summary["Target supports forward secrecy (PFS)"]
 
     for suite in (("SSLv3", sslv3_default), ("TLSv1", tlsv1_default)):
         issues.append(default_cipher_check(suite[0], suite[1]))
@@ -439,6 +480,11 @@ def get_check_issues(check_report):
         issues.append(_issues["is_self_signed"])
     else:
         issues.append(_issues["not_self_signed"])
+
+    if "no" in support_pfs:
+        issues.append(_issues["no_pfs"])
+    else:
+        issues.append(_issues["support_pfs"])
     
     return issues
 
