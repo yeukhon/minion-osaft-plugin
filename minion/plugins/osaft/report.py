@@ -364,7 +364,6 @@ def get_check_issues(check_report):
     tlsv1_default = cert_summary["Default cipher for TLSv1"]
     pk_strength = cert_summary["Certificate public key size"]
     is_not_expired = cert_summary["Certificate is not expired"]
-    no_rc4_support = cert_summary["Target does not accepts RC4 ciphers"]
     is_self_signed = cert_summary["Certificate is not self-signed"]
 
     def _get_cipher_level(text):
@@ -423,12 +422,6 @@ def get_check_issues(check_report):
     return issues
 
     """
-    if "yes" in no_rc4_support:
-        issues.append(
-            format_report('has_rc4_support', "Description", {"ciphers": rc4_ciphers})
-    else:
-        issues.append(_issues["no_rc4_support"])
-
     if "yes" in is_self_signed:
         issues.append(_issues["is_self_signed"])
     else:
