@@ -29,3 +29,23 @@ Note you need to replace ``MINION_BACKEND_VIRTUAL_ENV`` with
 the name of the virtualenv you created for Minion. If you install
 Minion to the global, system Python interpreter, you can skip that
 step.
+
+## Plugin Plan
+
+You can get started by creating a plan like this::
+
+```
+[
+  {
+    "configuration": {
+      "info": true
+    },
+    "description": "Run the O-Saft SSL/TLS Scanner",
+    "plugin_name": "minion.plugins.osaft.OSAFTPlugin"
+  }
+]
+
+```
+
+You can enable either ``info``, ``quick`` or ``check``. Only
+one is allowed per scan.
