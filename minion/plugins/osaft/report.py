@@ -256,6 +256,18 @@ FURTHER_INFO_ON_CERT_VALID += BASIC_FURTHER_INFO
 
 FURTHER_INFO_ON_CIPHER_LEVEL = BASIC_FURTHER_INFO
 
+FURTHER_INFO_ON_SELF_SIGNED_CERT = [
+    {
+        "URL": "https://www.globalsign.com/ssl-information-center/dangers-of-self-signed-certificates.html",
+        "Title": "GlobalSign CA - Dangers of Self-signed SSL Certificates",
+    },
+    {
+        "URL": "http://www.symantec.com/connect/blogs/self-signed-certificates-how-and-when-use-them-symantec",
+        "Title": "Symantec - Self-Signed Certificates: How and When to Use Them",
+    }
+]
+FURTHER_INFO_ON_SELF_SIGNED_CERT += BASIC_FURTHER_INFO
+
 _issues = {
     "low_pk_strength":
         {
@@ -339,6 +351,28 @@ It is recommended to choose a higher security strength cipher.",
             "URLs": [ {"URL": None, "Extra": None} ],
             "FurtherInfo": FURTHER_INFO_ON_CIPHER_LEVEL
         },
+    "is_self_signed":
+        {
+            "Code": "OSAFT-8",
+            "Summary": "Certificate is self-signed",
+            "Description": "Self-signed certificates are not verifiable by clients such as browsers because they are not \
+signed and trusted by any Certificate Authority (CA). A web user must add the self-signed certificate at his or her own \
+risk. Self-signed certificate cannot prove the legitimacy of the connection.",
+            "Severity": "High",
+            "URLs": [ {"URL": None, "Extra": None} ],
+            "FurtherInfo": FURTHER_INFO_ON_SELF_SIGNED_CERT
+        },
+    "not_self_signed":
+        {
+            "Code": "OSAFT-9",
+            "Summary": "Certificate is trusted and signed by a CA",
+            "Description": "This certificate is signed and trusted by a Certificate Authority (CA). A web user can connect \
+to the target server with high confident the connection is legitmate and trusted.",
+            "Severity": "Info",
+            "URLs": [ {"URL": None, "Extra": None} ],
+            "FurtherInfo": FURTHER_INFO_ON_SELF_SIGNED_CERT
+        },
+
 }
 
 def format_report(issue_key, component, formats):
@@ -364,7 +398,7 @@ def get_check_issues(check_report):
     tlsv1_default = cert_summary["Default cipher for TLSv1"]
     pk_strength = cert_summary["Certificate public key size"]
     is_not_expired = cert_summary["Certificate is not expired"]
-    is_self_signed = cert_summary["Certificate is not self-signed"]
+    is_not_self_signed = cert_summary["Certificate is not self-signed"]
 
     def _get_cipher_level(text):
         cipher, level = text.split(" ")
@@ -419,14 +453,12 @@ def get_check_issues(check_report):
             format_report('valid', "Description", {"timestamp": valid_until})
         )
 
-    return issues
-
-    """
-    if "yes" in is_self_signed:
+    if "no" in is_not_self_signed:
         issues.append(_issues["is_self_signed"])
     else:
         issues.append(_issues["not_self_signed"])
-    """
+    
+    return issues
 
 def get_info_issues(info_report):
     """
