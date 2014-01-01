@@ -7,7 +7,7 @@ from setuptools import setup
 install_requires = []
 
 setup(name="minion-osaft-plugin",
-      version="0.0",
+      version="0.1",
       description="OWASP O-SAFT SSL Plugin for Minion",
       url="https://github.com/yeukhon/minion-osaft-plugin/",
       author="Yeuk Hon Wong",

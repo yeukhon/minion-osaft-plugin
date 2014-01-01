@@ -13,7 +13,7 @@ from report import split_sections, get_info_issues, get_check_issues, get_quick_
 class OSAFTPlugin(ExternalProcessPlugin):
 
     PLUGIN_NAME = "O-SAFT"
-    PLUGIN_VERSION = "0.0"
+    PLUGIN_VERSION = "0.1"
 
     OSAFT_NAME = "o-saft.pl"
     OSAFT_MIN_VERSION = "13.12.17b"
