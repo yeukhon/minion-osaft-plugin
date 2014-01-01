@@ -459,6 +459,16 @@ def default_cipher_check(version, result):
                 [{"Summary": {"version": version}},
                  {"Description": {"version": version, "cipher": cipher, "level": level}}])
 
+
+def check_cert_expire(result):
+    # when cert is valid not expired, we only receive yes
+    # so on split the tuple is empty string on both positions
+    _, valid_until = re.split(r"yes|no", result)
+    if valid_until:
+        return False, valid_until
+    else:
+        return True, None
+
 def get_check_issues(check_report):
     """
     Return a list of issues that the +check have discovered.
@@ -486,14 +496,9 @@ def get_check_issues(check_report):
             format_report('high_pk_strength', 
                 [{"Description": {"size": key_size}}]))
 
-    # when cert is valid we only get yes, no timstamp
-    _, valid_until = re.split(r"yes|no", is_not_expired)
-    if not _ and not valid_until:
-        is_not_expired = True
-    else:
-        is_not_expired = False
-        valid_until = valid_until.split("(")[1].split(")")[0]
+    is_not_expired, valid_until = check_cert_expire(is_not_expired)
     if not is_not_expired:
+        valid_until = valid_until.split("(")[1].split(")")[0]
         issues.append(
             format_report('expired', 
                 [{"Description": {"timestamp": valid_until}}]))
@@ -574,14 +579,9 @@ def get_quick_issues(quick_report):
     for suite in (("SSLv3", sslv3_default), ("TLSv1", tlsv1_default)):
         issues.append(default_cipher_check(suite[0], suite[1]))
 
-    # when cert is valid we only get yes, no timstamp
-    _, valid_until = re.split(r"yes|no", is_not_expired)
-    if not _ and not valid_until:
-        is_not_expired = True
-    else:
-        is_not_expired = False
-        valid_until = valid_until.split("( ..")[1].split(")")[0].strip()
+    is_not_expired, valid_until = check_cert_expire(is_not_expired)
     if not is_not_expired:
+        valid_until = valid_until.split("( ..")[1].split(")")[0].strip()
         issues.append(
             format_report('expired', 
                 [{"Description": {"timestamp": valid_until}}]))
