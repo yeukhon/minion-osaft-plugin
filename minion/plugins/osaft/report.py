@@ -567,22 +567,27 @@ def get_quick_issues(quick_report):
     cert_summary = quick_report["Certificate Check Summary"]
     sslv3_default = cert_summary["Default CipherSSLv3"]
     tlsv1_default = cert_summary["Default CipherTLSv1"]
-    not_expired = cert_summary["Validity (date)"]
+    is_not_expired = cert_summary["Validity (date)"]
     support_pfs = cert_summary["PFS supported"]
     has_sec_renego = cert_info["Renegotiation"]
 
     for suite in (("SSLv3", sslv3_default), ("TLSv1", tlsv1_default)):
         issues.append(default_cipher_check(suite[0], suite[1]))
 
-    valid_until = not_expired.split("( ..")[1].split(")")[0].strip()
-    if "no" in not_expired:
+    # when cert is valid we only get yes, no timstamp
+    _, valid_until = re.split(r"yes|no", is_not_expired)
+    if not _ and not valid_until:
+        is_not_expired = True
+    else:
+        is_not_expired = False
+        valid_until = valid_until.split("( ..")[1].split(")")[0].strip()
+    if not is_not_expired:
         issues.append(
             format_report('expired', 
                 [{"Description": {"timestamp": valid_until}}]))
     else:
-        issues.append(
-            format_report('valid', 
-                [{"Description": {"timestamp": valid_until}}]))
+        issues.append(_issues['valid'])
+
     if "no" in support_pfs:
         issues.append(_issues["no_pfs"])
     else:
