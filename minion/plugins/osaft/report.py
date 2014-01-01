@@ -365,7 +365,7 @@ the scanned certificate has expired since {timestamp}.",
             "Code": "OSAFT-5",
             "Summary": "Certificate is still valid",
             "Description": "A certificate is issued and considered valid for a period of time. The scan reveals that \
-the scanned certificate remains valid until {timestamp}.",
+the scanned certificate is still valid.",
             "Severity": "Info",
             "URLs": [ {"URL": None, "Extra": None} ],
             "FurtherInfo": FURTHER_INFO_ON_CERT_VALID
@@ -486,16 +486,19 @@ def get_check_issues(check_report):
             format_report('high_pk_strength', 
                 [{"Description": {"size": key_size}}]))
 
-    _, valid_until = is_not_expired.split(" ", 1)
-    valid_until = is_not_expired.split("(")[1].split(")")[0]
-    if "no" in is_not_expired:
+    # when cert is valid we only get yes, no timstamp
+    _, valid_until = re.split(r"yes|no", is_not_expired)
+    if not _ and not valid_until:
+        is_not_expired = True
+    else:
+        is_not_expired = False
+        valid_until = valid_until.split("(")[1].split(")")[0]
+    if not is_not_expired:
         issues.append(
             format_report('expired', 
                 [{"Description": {"timestamp": valid_until}}]))
     else:
-        issues.append(
-            format_report('valid', 
-                [{"Description": {"timestamp": valid_until}}]))
+        issues.append(_issues["valid"])
 
     if "no" in is_not_self_signed:
         issues.append(_issues["is_self_signed"])
