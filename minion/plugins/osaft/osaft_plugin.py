@@ -8,7 +8,7 @@ import re
 import subprocess
 
 from minion.plugins.base import ExternalProcessPlugin
-from report import split_sections, get_info_issues
+from report import split_sections, get_info_issues, get_check_issues
 
 class OSAFTPlugin(ExternalProcessPlugin):
 
@@ -102,15 +102,18 @@ class OSAFTPlugin(ExternalProcessPlugin):
                 #    issues = get_info_issues(sections_dict)
                 #    self.report_issues(issues)
                 #elif self.osaft_command == "+check":
+                #if True:
+                #    self.report_issues([
+                #        {"Summary": "Successful +check scan",
+                #         "Description": sections_dict,
+                #        "Severity": "Info",
+                #        "URLs": [ {"URL": None, "Extra": None} ],
+                #        "FurtherInfo": [ {"URL": None, "Title": None} ]
+                #        }
+                #    ])
                 if True:
-                    self.report_issues([
-                        {"Summary": "Successful +check scan",
-                         "Description": sections_dict,
-                        "Severity": "Info",
-                        "URLs": [ {"URL": None, "Extra": None} ],
-                        "FurtherInfo": [ {"URL": None, "Title": None} ]
-                        }
-                    ])
+                    issues = get_check_issues(sections_dict)
+                    self.report_issues(issues)
             else:
                 summary = "Unsuccessful OSAFT scan"
                 description = self.stdout

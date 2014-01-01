@@ -254,6 +254,8 @@ FURTHER_INFO_ON_CERT_VALID = [
 ]
 FURTHER_INFO_ON_CERT_VALID += BASIC_FURTHER_INFO
 
+FURTHER_INFO_ON_CIPHER_LEVEL = BASIC_FURTHER_INFO
+
 _issues = {
     "low_pk_strength":
         {
@@ -318,12 +320,118 @@ the scanned certificate remains valid until {timestamp}.",
             "URLs": [ {"URL": None, "Extra": None} ],
             "FurtherInfo": FURTHER_INFO_ON_CERT_VALID
         },
+    "low_cipher_default":
+        {
+            "Code": "OSAFT-6",
+            "Summary": "Default cipher for {name} is considered weak",
+            "Description": "The default cipher for {name} return from the server is {cipher}. The security strength is {level}. \
+It is recommended to choose a higher security strength cipher.",
+            "Severity": "Medium",
+            "URLs": [ {"URL": None, "Extra": None} ],
+            "FurtherInfo": FURTHER_INFO_ON_CIPHER_LEVEL
+        },
+    "high_cipher_default":
+        {
+            "Code": "OSAFT-7",
+            "Summary": "Default cipher for {name} is considered strong",
+            "Description": "The default cipher for {name} return from the server is {cipher}. The security strength is {level}.",
+            "Severity": "Info",
+            "URLs": [ {"URL": None, "Extra": None} ],
+            "FurtherInfo": FURTHER_INFO_ON_CIPHER_LEVEL
+        },
 }
 
 def format_report(issue_key, component, formats):
     issue = _issues[issue_key]
     issue[component] = issue[component].format(**formats)
     return issue
+
+def format_report2(issue_key, format_list):
+    issue = _issues[issue_key]
+    for component in format_list:
+        for component_name, kwargs in component.items():
+            issue[component_name] = issue[component_name].format(**kwargs)
+    return issue
+
+def get_check_issues(check_report):
+    """
+    Return a list of issues that the +check have discovered.
+    """
+
+    issues = []
+    cert_summary = check_report["Certificate Check Summary"]
+    sslv3_default = cert_summary["Default cipher for SSLv3"]
+    tlsv1_default = cert_summary["Default cipher for TLSv1"]
+    pk_strength = cert_summary["Certificate public key size"]
+    is_expired = cert_summary["Certificate is not expired"]
+    no_rc4_support = cert_summary["Target does not accepts RC4 ciphers"]
+    is_self_signed = cert_summary["Certificate is not self-signed"]
+
+    def _get_cipher_level(text):
+        cipher, level = text.split(" ")
+        return cipher.strip(), level.strip()
+
+    cipher, level = _get_cipher_level(sslv3_default)
+    if "HIGH" not in sslv3_default:
+        issues.append(
+            format_report2('low_cipher_default', 
+                [{"Summary": {"name": "SSLv3"}},
+                  {"Description": {"name": "SSLv3", "cipher": cipher, "level": level}}])
+        )
+    else:
+        issues.append(
+            format_report2('high_cipher_default',
+                [{"Summary": {"name": "SSLv3"}},
+                  {"Description": {"name": "SSLv3", "cipher": cipher, "level": level}}])
+        )
+
+    return issues
+    """
+    cipher, level = _get_cipher_level(sslv2_default)
+    if "HIGH" not in sslv2_default:
+        issues.append(
+            format_report('cipher_default_level', 
+                [{"Summary": {"name": "SSLv2"}},
+                  "Description": {"name": "SSLv2", "cipher": cipher, "level": level}])
+        )
+    else:
+        issues.append(
+            format_report('cipher_default_level',
+                [{"Summary": {"name": "SSLv2"}},
+                  "Description": {"name": "SSLv2", "cipher": cipher, "level": level}])
+        )
+
+    if int(pk_strength) < 2048:
+        issues.append(
+            format_report('low_pk_strength', "Description", {"size": pk_strength})
+        )
+    else:
+        issues.append(
+            format_report('high_pk_strength', "Description", {"size": pk_strength})
+        )
+
+    _, valid_until = is_expired.split(" ", 1)
+    valid_until = is_expired.split("(")[1].split(")")[0]
+    if "no" not in is_expired:
+        issues.append(
+            format_report('expired', "Description", {"timestamp": valid_until})
+        )
+    else:
+        issues.append(
+            format_report('valid', "Description", {"timestamp": valid_until})
+        )
+
+    if "yes" in no_rc4_support:
+        issues.append(
+            format_report('has_rc4_support', "Description", {"ciphers": rc4_ciphers})
+    else:
+        issues.append(_issues["no_rc4_support"])
+
+    if "yes" in is_self_signed:
+        issues.append(_issues["is_self_signed"])
+    else:
+        issues.append(_issues["not_self_signed"])
+    """
 
 def get_info_issues(info_report):
     """
