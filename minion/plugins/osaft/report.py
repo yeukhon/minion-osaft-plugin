@@ -3,6 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import re
+from datetime import datetime
 
 def convert_rows_to_dict(lines):
     """
@@ -147,3 +148,166 @@ def section_processor(all_lines, sections_headers, titles):
         sections_dict[section] = convert_rows_to_dict(rows)
 
     return sections_dict
+
+BASIC_FURTHER_INFO = [
+    {
+        "URL": "https://www.ssllabs.com/projects/best-practices/",
+        "Title": "QUALYS SSL Labs - SSL/TLS Deployment Best Practices",
+    },
+    {
+        "URL": "http://httpd.apache.org/docs/2.2/ssl/ssl_intro.html",
+        "Title": "Apache - SSL/TLS Strong Encryption: An Introduction",
+    },
+    {
+        "URL": "https://developer.mozilla.org/en-US/docs/Introduction_to_SSL",
+        "Title": "Mozilla Developer Network - Introduction to SSL",
+    },
+    {
+        "URL": "https://wiki.mozilla.org/Security/Server_Side_TLS",
+        "Title": "Mozilla Developer Network - Security/Server Side TLS",
+    },
+    {
+        "URL": "https://www.owasp.org/index.php/Testing_for_SSL-TLS_(OWASP-CM-001)",
+        "Title": "OWASP - Testing for SSL-TLS",
+    },
+    {
+        "URL": "http://www.openssl.org/related/ssl.html",
+        "Title": "OpenSSL - SSL/TLS"
+    }
+]
+
+FURTHER_INFO_ON_KEY_SIZE = [
+    {
+        "URL": "https://www.globalsign.com/ssl-information-center/choosing-safe-key-sizes.html",
+        "Title": "GlobalSign SSL Authority - Algorithms, key size and Digital Certificates"
+    }
+]
+FURTHER_INFO_ON_KEY_SIZE += BASIC_FURTHER_INFO
+
+FURTHER_INFO_ON_RENGO = [
+    {
+        "URL": "http://www.digicert.com/news/2011-06-03-ssl-renego.htm",
+        "Title": "digicert - Fixing TLS Renegotiation on Your Server",
+    },
+    {
+        "URL": "https://wiki.mozilla.org/Security:Renegotiation",
+        "Title": "Mozilla Wiki - Security:Renegotiation"
+    },
+    {
+        "URL": "http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2009-3555",
+        "Title": "Vulnerability Summary for CVE-2009-3555"
+    }
+]
+FURTHER_INFO_ON_RENGO += BASIC_FURTHER_INFO
+
+FURTHER_INFO_ON_CERT_VALID = [
+    {
+        "URL": "https://www.globalsign.com/blog/the-dangers-of-ssl-certificate-expiration.html",
+        "Title": "GlobalSign Certificate Authority - The Dangers of SSL Certificate Expiration",
+    }
+]
+FURTHER_INFO_ON_CERT_VALID += BASIC_FURTHER_INFO
+
+_issues = {
+    "low_pk_strength":
+        {
+            "Code": "OSAFT-0",
+            "Summary": "Certificate key size should be at least 2048 bits",
+            "Description": "Certificate key size is too low. The current key size is {size}. 2048 bits is the \
+minimum recommended size for a SSL/TLS certificate.",
+            "Severity": "High",
+            "URLs": [ {"URL": None, "Extra": None} ],
+            "FurtherInfo": FURTHER_INFO_ON_KEY_SIZE
+        },
+     "high_pk_strength":
+        {
+            "Code": "OSAFT-1",
+            "Summary": "Certificate key size is at least 2048 bits",
+            "Description": "Certificate key size has met the minimal key size recommendation, which is at least \
+2048 bits. The current key size is {size}.",
+            "Severity": "Info",
+            "URLs": [ {"URL": None, "Extra": None} ],
+            "FurtherInfo": FURTHER_INFO_ON_KEY_SIZE
+        },
+   "no_sec_renego":
+        {
+            "Code": "OSAFT-2",
+            "Summary": "Server does not support secure TLS renegotation",
+            "Description": "A flaw in the design of the TLS v.1/SSL v.3 (TLS/SSL) handshake process was discovered \
+in 2009, and RFC 5746 (Feb. 2010) was released to update the protocol specification. The flaw enables man-in-the-middle \
+attack during the handshake process. This scan reveals that the target server serving the SSL/TLS is not up-to-date.",
+            "Severity": "High",
+            "URLs": [ {"URL": None, "Extra": None} ],
+            "FurtherInfo": FURTHER_INFO_ON_RENGO
+        },
+   "has_sec_renego":
+        {
+            "Code": "OSAFT-3",
+            "Summary": "Server supports secure TLS renegotation",
+            "Description": "The target server serving the SSL/TLS certificate has secure_renegotation flag enabled. \
+A flaw in the design of the TLS v.1/SSL v.3 (TLS/SSL) handshake process was discovered in 2009, and RFC 5746 \
+(Feb. 2010) was released to update the protocol specification. The flaw enables man-in-the-middle attack during \
+the handshake process. This scan reveals that the target server is safe from TLS renegotation man-in-the-middle attack.",
+            "Severity": "Info",
+            "URLs": [ {"URL": None, "Extra": None} ],
+            "FurtherInfo": FURTHER_INFO_ON_RENGO
+        },
+    "expired":
+        {
+            "Code": "OSAFT-4",
+            "Summary": "Certificate has expired",
+            "Description": "A certificate is issued and considered valid for a period of time. The scan reveals that \
+the scanned certificate has expired since {timestamp}.",
+            "Severity": "High",
+            "URLs": [ {"URL": None, "Extra": None} ],
+            "FurtherInfo": FURTHER_INFO_ON_CERT_VALID
+        },
+    "valid":
+        {
+            "Code": "OSAFT-5",
+            "Summary": "Certificate is still valid",
+            "Description": "A certificate is issued and considered valid for a period of time. The scan reveals that \
+the scanned certificate remains valid until {timestamp}.",
+            "Severity": "Info",
+            "URLs": [ {"URL": None, "Extra": None} ],
+            "FurtherInfo": FURTHER_INFO_ON_CERT_VALID
+        },
+}
+
+def check_info_issues(info_report):
+    """
+    Return a list of issues that the +info have discovered.
+
+    Parameters
+    ----------
+    info_report : dict
+        This dictionary should come from section_processor.
+
+    Returns
+    -------
+    issues: list
+        A list of issues found in the standard Minion
+        scan issue format.
+
+    """
+
+    issues = []
+    cert_info = info_report["Certificate Information"]
+    pk_strength = cert_info.get("Certificate Public Key Length")
+    has_sec_renego = cert_info.get("Target supports renegotiation")
+    valid_until = cert_info.get("Certificate valid until")
+
+    if int(pk_strength) < 2048:
+        issues.append(_issues["low_pk_strength"])
+    else:
+        issues.append(_issues["high_pk_strength"])
+    if has_sec_renego != "Secure Renegotiation IS supported":
+        issues.append(_issues["no_sec_renego"])
+    else:
+        issues.append(_issues["has_sec_renego"])
+    expire_datetime = datetime.strptime(valid_until, "%b %d %H:%M:%S %Y %Z")
+    if datetime.today() >= expire_datetime:
+        issues.append(_issues["expired"])
+    else:
+        issues.append(_issues["valid"])
+    return issues

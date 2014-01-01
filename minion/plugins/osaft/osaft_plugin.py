@@ -8,7 +8,7 @@ import re
 import subprocess
 
 from minion.plugins.base import ExternalProcessPlugin
-from report import split_sections
+from report import split_sections, check_info_issues
 
 class OSAFTPlugin(ExternalProcessPlugin):
 
@@ -95,17 +95,19 @@ class OSAFTPlugin(ExternalProcessPlugin):
             self.report_finish("STOPPED")
         elif process_status == 0:
             if not self.stderr:
-                summary = "Successful OSAFT scan"
-                description = split_sections(self.osaft_command, self.stdout)
+                #summary = "Successful OSAFT scan"
+                sections_dict = split_sections(self.osaft_command, self.stdout)
+                issues = check_info_issues(sections_dict)
+                self.report_issues(issues)
             else:
                 summary = "Unsuccessful OSAFT scan"
                 description = self.stdout
-            self.report_issues([
-                {"Summary": summary,
-                 "Description": description,
-                "Severity": "Info",
-                "URLs": [ {"URL": None, "Extra": None} ],
-                "FurtherInfo": [ {"URL": None, "Title": None} ]
-                }
-            ])
+                self.report_issues([
+                    {"Summary": summary,
+                     "Description": description,
+                    "Severity": "Info",
+                    "URLs": [ {"URL": None, "Extra": None} ],
+                    "FurtherInfo": [ {"URL": None, "Title": None} ]
+                    }
+                ])
             self.report_finish()
