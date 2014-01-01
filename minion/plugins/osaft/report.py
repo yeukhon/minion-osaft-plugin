@@ -385,22 +385,22 @@ def get_check_issues(check_report):
                   {"Description": {"name": "SSLv3", "cipher": cipher, "level": level}}])
         )
 
-    return issues
-    """
-    cipher, level = _get_cipher_level(sslv2_default)
-    if "HIGH" not in sslv2_default:
+    cipher, level = _get_cipher_level(tlsv1_default)
+    if "HIGH" not in tlsv1_default:
         issues.append(
-            format_report('cipher_default_level', 
-                [{"Summary": {"name": "SSLv2"}},
-                  "Description": {"name": "SSLv2", "cipher": cipher, "level": level}])
+            format_report2('low_cipher_default', 
+                [{"Summary": {"name": "TLSv1"}},
+                  {"Description": {"name": "TLSv1", "cipher": cipher, "level": level}}])
         )
     else:
         issues.append(
-            format_report('cipher_default_level',
-                [{"Summary": {"name": "SSLv2"}},
-                  "Description": {"name": "SSLv2", "cipher": cipher, "level": level}])
+            format_report2('high_cipher_default',
+                [{"Summary": {"name": "TLSv1"}},
+                 {"Description": {"name": "TLSv1", "cipher": cipher, "level": level}}])
         )
 
+    return issues
+    """
     if int(pk_strength) < 2048:
         issues.append(
             format_report('low_pk_strength', "Description", {"size": pk_strength})
