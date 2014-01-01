@@ -335,8 +335,8 @@ the scanned certificate remains valid until {timestamp}.",
     "low_cipher_default":
         {
             "Code": "OSAFT-6",
-            "Summary": "Default cipher for {name} is considered weak",
-            "Description": "The default cipher for {name} return from the server is {cipher}. The security strength is {level}. \
+            "Summary": "Default cipher for {version} is considered weak",
+            "Description": "The default cipher for {version} return from the server is {cipher}. The security strength is {level}. \
 It is recommended to choose a higher security strength cipher.",
             "Severity": "Medium",
             "URLs": [ {"URL": None, "Extra": None} ],
@@ -345,8 +345,8 @@ It is recommended to choose a higher security strength cipher.",
     "high_cipher_default":
         {
             "Code": "OSAFT-7",
-            "Summary": "Default cipher for {name} is considered strong",
-            "Description": "The default cipher for {name} return from the server is {cipher}. The security strength is {level}.",
+            "Summary": "Default cipher for {version} is considered strong",
+            "Description": "The default cipher for {version} return from the server is {cipher}. The security strength is {level}.",
             "Severity": "Info",
             "URLs": [ {"URL": None, "Extra": None} ],
             "FurtherInfo": FURTHER_INFO_ON_CIPHER_LEVEL
@@ -387,6 +387,21 @@ def format_report2(issue_key, format_list):
             issue[component_name] = issue[component_name].format(**kwargs)
     return issue
 
+def default_cipher_check(version, result):
+    def _get_cipher_level(text):
+        cipher, level = text.split(" ")
+        return cipher.strip(), level.strip()
+
+    cipher, level = _get_cipher_level(result)
+    if "HIGH" not in result:
+        return format_report2('low_cipher_default', 
+                [{"Summary": {"version": version}},
+                 {"Description": {"version": version, "cipher": cipher, "level": level}}])
+    else:
+        return format_report2('high_cipher_default',
+                [{"Summary": {"version": version}},
+                 {"Description": {"version": version, "cipher": cipher, "level": level}}])
+
 def get_check_issues(check_report):
     """
     Return a list of issues that the +check have discovered.
@@ -400,37 +415,8 @@ def get_check_issues(check_report):
     is_not_expired = cert_summary["Certificate is not expired"]
     is_not_self_signed = cert_summary["Certificate is not self-signed"]
 
-    def _get_cipher_level(text):
-        cipher, level = text.split(" ")
-        return cipher.strip(), level.strip()
-
-    cipher, level = _get_cipher_level(sslv3_default)
-    if "HIGH" not in sslv3_default:
-        issues.append(
-            format_report2('low_cipher_default', 
-                [{"Summary": {"name": "SSLv3"}},
-                  {"Description": {"name": "SSLv3", "cipher": cipher, "level": level}}])
-        )
-    else:
-        issues.append(
-            format_report2('high_cipher_default',
-                [{"Summary": {"name": "SSLv3"}},
-                  {"Description": {"name": "SSLv3", "cipher": cipher, "level": level}}])
-        )
-
-    cipher, level = _get_cipher_level(tlsv1_default)
-    if "HIGH" not in tlsv1_default:
-        issues.append(
-            format_report2('low_cipher_default', 
-                [{"Summary": {"name": "TLSv1"}},
-                  {"Description": {"name": "TLSv1", "cipher": cipher, "level": level}}])
-        )
-    else:
-        issues.append(
-            format_report2('high_cipher_default',
-                [{"Summary": {"name": "TLSv1"}},
-                 {"Description": {"name": "TLSv1", "cipher": cipher, "level": level}}])
-        )
+    for suite in (("SSLv3", sslv3_default), ("TLSv1", tlsv1_default)):
+        issues.append(default_cipher_check(suite[0], suite[1]))
 
     key_size = pk_strength.split(" bits")[0]
     if int(key_size) < 2048:
