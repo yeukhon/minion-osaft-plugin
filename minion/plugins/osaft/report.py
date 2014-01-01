@@ -6,8 +6,10 @@ import re
 
 def convert_rows_to_dict(lines):
     """
-    Returns a list of (column1, column2) key-value
-    tuple for each non-summary section.
+    Convert each row in a section into
+    key-value pair by splitting on ``:``
+    character in each row. The first ``:``
+    is the key.
 
     Parameters
     ----------
@@ -17,7 +19,7 @@ def convert_rows_to_dict(lines):
 
     Returns
     -------
-    new_list : list
+    section_dict : dict
     
     """
 
@@ -27,21 +29,6 @@ def convert_rows_to_dict(lines):
         if len(temp) == 2:
             new_list.append([temp[0], temp[1].strip()])
     return {item[0]: item[1] for item in new_list}
-
-def process_report(text):
-    def _extra(self, section):
-        lines = section.split("\n")
-        # each section is preceed by section name, some line and a line of dashes
-        # the "some line" could be an empty line or column's names
-        if len(lines) < 4:
-            raise Exception("Incomplete section discovered in the report.")
-
-        data = lines[4:]
-        report_data = []
-        for item in data:
-            temp = item.split(":", 1)
-            new_list.append( [temp[0], temp[1].strip()] )
-        return report_data
 
 def split_cipher_check(cipher_list, name):
     if len(cipher_list) < 3:
@@ -55,39 +42,13 @@ def split_cipher_check(cipher_list, name):
         cipher_dict[title][strength][cipher_name] = present
     return cipher_dict
 
-def skip_to_target(lines):
-    """
-    Locate the index of the beginning of the Target section
-    from a list of lines of the stdout.
-
-    Parameters
-    ----------
-    lines : list
-        A list of lines split on "\n" from the original stdout.
-
-    Returns
-    -------
-    target_index : int
-        The location of the Target section header in the list.
-
-    """
-
-    target_index = 0
-    for i, line in enumerate(lines):
-        if "==== Target:" in line:
-            target_index = i
-            break
-    if target_index == 0:
-        raise Exception("Report does not contain Target section.")
-    return target_index
-
 def split_sections(command, stdout):
     """
     Split the stdout report into a list of sections based on command.
 
     Different command has different output so different sections will
     be found. To further split each section down into key-value dict,
-    call ``convert_section_to_dict``.
+    call ``convert_rows_to_dict``.
 
     Parameters
     ----------
@@ -114,19 +75,17 @@ def split_sections(command, stdout):
 
 def split_info_sections(all_lines):
     """
-    Return a list of sections in the info report.
+    Return a dict of sections in the info report.
 
     Parameters
     ----------
     all_lines : list
         A list of lines from the original stdout which is generated
         by splitting on ``\n``.
-    target_index : int
-        The index where the target section header first appear.
 
     Returns
     -------
-    sections_list : list
+    sections_dict : dict
 
     """
 
