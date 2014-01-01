@@ -213,7 +213,7 @@ _issues = {
         {
             "Code": "OSAFT-0",
             "Summary": "Certificate key size should be at least 2048 bits",
-            "Description": "Certificate key size is too low. The current key size is {size}. 2048 bits is the \
+            "Description": "Certificate key size is too low. The current key size is {size} bits. 2048 bits is the \
 minimum recommended size for a SSL/TLS certificate.",
             "Severity": "High",
             "URLs": [ {"URL": None, "Extra": None} ],
@@ -224,7 +224,7 @@ minimum recommended size for a SSL/TLS certificate.",
             "Code": "OSAFT-1",
             "Summary": "Certificate key size is at least 2048 bits",
             "Description": "Certificate key size has met the minimal key size recommendation, which is at least \
-2048 bits. The current key size is {size}.",
+2048 bits. The current key size is {size} bits.",
             "Severity": "Info",
             "URLs": [ {"URL": None, "Extra": None} ],
             "FurtherInfo": FURTHER_INFO_ON_KEY_SIZE
@@ -274,6 +274,11 @@ the scanned certificate remains valid until {timestamp}.",
         },
 }
 
+def format_report(issue_key, component, formats):
+    issue = _issues[issue_key]
+    issue[component] = issue[component].format(**formats)
+    return issue
+
 def check_info_issues(info_report):
     """
     Return a list of issues that the +info have discovered.
@@ -298,16 +303,27 @@ def check_info_issues(info_report):
     valid_until = cert_info.get("Certificate valid until")
 
     if int(pk_strength) < 2048:
-        issues.append(_issues["low_pk_strength"])
+        issues.append(
+            format_report('low_pk_strength', "Description", {"size": pk_strength})
+        )
     else:
-        issues.append(_issues["high_pk_strength"])
+        issues.append(
+            format_report('high_pk_strength', "Description", {"size": pk_strength})
+        )
+
+    expire_datetime = datetime.strptime(valid_until, "%b %d %H:%M:%S %Y %Z")
+    if datetime.today() >= expire_datetime:
+        issues.append(
+            format_report('expired', "Description", {"timestamp": valid_until})
+        )
+    else:
+        issues.append(
+            format_report('valid', "Description", {"timestamp": valid_until})
+        )
+
     if has_sec_renego != "Secure Renegotiation IS supported":
         issues.append(_issues["no_sec_renego"])
     else:
         issues.append(_issues["has_sec_renego"])
-    expire_datetime = datetime.strptime(valid_until, "%b %d %H:%M:%S %Y %Z")
-    if datetime.today() >= expire_datetime:
-        issues.append(_issues["expired"])
-    else:
-        issues.append(_issues["valid"])
+
     return issues
